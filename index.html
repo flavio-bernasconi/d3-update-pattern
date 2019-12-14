@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+
+    <svg class='chart'></svg>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.6.0/d3.js"></script>
+    <script>
+        d3.csv('data.csv').then(data => {
+
+            data.forEach(d => {
+                d.rating = +d.rating;
+            })
+
+            // sorting data
+            data = data.sort(function(a, b) {
+                return parseFloat(b.rating) - parseFloat(a.rating);
+            });
+
+            //store original data assets
+            var originalData = data;
+            ratingDefault = 8.8;
+
+            //get data filtered by rating default
+            data = data.filter(function(value, index, arr){
+
+                return value.rating > ratingDefault;
+
+            });
+
+
+            //chart 
+            const chartWidth = 960,
+                chartHeight = 1000;
+
+            const margin = {top : 50, left: 200, right : 30, bottom: 30};
+
+            const innerWidth = chartWidth - margin.left - margin.right;
+            const innerHeight = chartHeight - margin.top - margin.bottom;
+
+            const space = d3.select('.chart')
+                                    .attr('width', chartWidth)
+                                    .attr('height', chartHeight);
+
+            //real dimension of the chart
+            let chart = space.append('g')
+                        .attr('class' , 'gruppo')
+                        .attr('width', innerWidth)
+                        .attr('height', innerHeight)
+                        .attr('transform', `translate ( ${margin.left} , ${margin.top})`);  
+            
+            let xScale = d3.scaleLinear()
+                            .domain([0,d3.max(data, d => d.rating)])
+                            .range([0, innerWidth]);
+                            
+            let xAxis = d3.axisBottom(xScale);
+            chart.append('g')
+                    .call(xAxis)
+                    .attr('transform',`translate(0, ${innerHeight})`)
+
+            let yScale = d3.scaleBand()
+                            .domain(data.map(d => d.name))
+                            .range([0, innerHeight])
+                            .padding(0.1);
+
+            let yAxis = d3.axisLeft(yScale);
+            chart.append('g').call(yAxis).attr('class', 'yLine');
+
+
+            //function draw 
+            const render = (selection, data) => {
+
+                //update axis
+                xScale.domain([0,d3.max(data, d => d.rating)]);
+                yScale.domain(data.map(d => d.name));
+
+                chart.select('.yLine').call(yAxis);
+
+                const rectangles = chart.selectAll('rect').data(data);
+
+                rectangles.enter().append('rect')
+                            .transition()
+                            .duration(500)
+                            .attr('width', d => xScale(d.rating))
+                            .attr('height', yScale.bandwidth())
+                            .attr('y', d => yScale(d.name))
+
+                //update rect
+                rectangles.attr('width', d => xScale(d.rating))
+                            .attr('height', yScale.bandwidth())
+                            .attr('y', d => yScale(d.name))
+
+                rectangles.exit().remove();
+
+            }
+
+            render( chart, data);
+
+            // setInterval(()=> {
+            //     data.pop()
+            //     console.log(data.length)
+            //     render( chart, data);
+            // }, 2000)
+
+            var current = ratingDefault;
+
+            let btn = d3.select('body')
+                            .append('button')
+                            .text('click me')
+                            .on('click', function(){
+                                
+                                current = current - 0.1;
+                                console.log(current)
+
+                                data = originalData.filter(function(d){
+                                    console.log('in function')
+                                        return d.rating > current;
+                                    });
+
+                                console.log("data",data)
+
+                                render( chart, data);
+                                                                
+                            });
+
+        })
+    </script>
+    
+</body>
+</html>
