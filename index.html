@@ -7,20 +7,34 @@
     <title>Document</title>
 </head>
 <body>
+
+    <h3>choose</h3>
+    <input type="radio" name="type" value="all" class="tipo" checked>all
+    <input type="radio" name="type" value="serie" class="tipo" >serie
+    <input type="radio" name="type" value="movie" class="tipo">movie
     
+    <h3>choose</h3>
     <input type="radio" name="radioX" value="rating" class="input" checked>rating
     <input type="radio" name="radioX" value="episodes" class="input">episodes
+
+
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.6.0/d3.js"></script>
     <script>
         d3.csv('data.csv').then(data => {
 
             const genreArray = [];
-            var newRating = 0;
+            ratingDefault = 8;
+            genreDefault = 'Action';
+            limitData = 160;
+            var newRating = ratingDefault;
             var newGenre = '';
             var newLimit = 0;
             var valX = 'rating';
             numEpisodes = [];
+            const movie = [];
+            const serie = [];
+
 
             data.forEach(d => {
                 d.rating = +d.rating;
@@ -31,7 +45,19 @@
                         genreArray.push(genreSplit[i])
                     }
                 }
+                for( x = 0; x < data.length; x ++){
+                    if(d.episodes <= 3 && !movie.includes(d)){
+                        movie.push(d)
+                    }
+                    if(d.episodes > 3 && !serie.includes(d)){
+                        serie.push(d)
+                    }    
+                    
+                }
             })
+
+            console.log(data)
+
 
             //genre selection
             const select = d3.select('body').append('select').attr('class','genre').attr('id','idGenre');
@@ -40,7 +66,6 @@
 
             option.text(d => d).attr('value', d => d)
 
-            console.log(genreArray)
 
             //rating selection
             const ratingSelection = d3.select('body').append('select').attr('class','rating').attr('id','idRating');
@@ -60,9 +85,7 @@
             //store original data assets
             var originalData = data;
 
-            ratingDefault = 9;
-            genreDefault = 'Action';
-            limitData = 20;
+
 
             selectElement('idGenre',genreDefault)
             selectElement('idRating',ratingDefault)
@@ -140,9 +163,7 @@
                         numEpisodes.push(d.episodes)
                     }
                 })
- 
-                console.log('domain',xScale.domain())
-                console.log('num ep',numEpisodes)
+
 
                 chart.select('.yLine').call(yAxis);
                 chart.select('.xLine').call(xAxis);
@@ -168,13 +189,30 @@
 
             render( chart, newData, valX);
 
+
+            function filtra(arr, genre){
+                filteredData = arr.filter(function(d,i){
+                    
+                    return d.rating > newRating  && d.genre.includes(genre);
+
+                });
+
+                filteredData = filteredData.slice(0, limitData);
+
+                updatedData = []
+
+                updatedData.push(...filteredData);
+
+                console.log('data funzione filtra', updatedData)
+
+                return(updatedData)
+            }
+
             var updatedData = [];
 
             //value xAxis episode or rating
             d3.selectAll('.input').on('change', function(){
-                console.log(this.value)
                 valX = this.value;
-                console.log('val xxx',valX)
                 console.log('uppo',updatedData)
 
                 if(updatedData.length > 0){
@@ -186,6 +224,18 @@
             
             })
 
+
+
+            var currentType = '';
+
+            d3.selectAll('.tipo').on('change', function(){
+                console.log(this.value)
+                currentType = this.value;
+
+                ifType()
+
+            
+            })
 
 
 
@@ -201,21 +251,8 @@
                 maxRating = maxRating.toFixed(2)
                 console.log('max',maxRating)
 
-                filteredData = data.filter(function(d,i){
-                    
-                    return d.rating > newRating  && d.genre.includes(newGenre);
-
-                });
-
-                filteredData = filteredData.slice(0, limitData);
-
-                updatedData = []
-
-                updatedData.push(...filteredData);
-
-                console.log('uuuuup',updatedData)
-
-                render( chart, filteredData, valX);
+                ifType()
+                
             })
 
             //rating selected
@@ -231,26 +268,32 @@
                 console.log('max',maxRating)
 
 
-                console.log(newGenre)
-
-                let filteredData = data.filter(function(d){
-                
-                    return d.rating > minRating && d.genre.includes(newGenre);
-
-                });
-
-                filteredData = filteredData.slice(0, limitData);
-
-                updatedData = []
-
-                updatedData.push(...filteredData);
-
-                console.log('uuuuup',updatedData)
-
-                render( chart, filteredData, valX);
+                ifType()
 
             })
 
+
+            function ifType(){
+                if(currentType == 'movie'){
+
+                    filtra(movie,newGenre)
+
+                    render( chart, updatedData, valX);
+                }
+                if(currentType == 'serie'){
+
+                    filtra(serie,newGenre)
+
+                    render( chart, updatedData, valX);
+                }
+                if(currentType == 'all'){
+                    var allType = [...movie,...serie]
+
+                    filtra(allType,newGenre)
+
+                    render( chart, filteredData, valX)
+                }
+            }
 
         })
     </script>
