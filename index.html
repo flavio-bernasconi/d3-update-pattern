@@ -7,37 +7,49 @@
     <title>Document</title>
 </head>
 <body>
-
+    
+    <input type="radio" name="radioX" value="rating" class="input" checked>rating
+    <input type="radio" name="radioX" value="episodes" class="input">episodes
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.6.0/d3.js"></script>
     <script>
         d3.csv('data.csv').then(data => {
 
             const genreArray = [];
+            var newRating = 0;
+            var newGenre = '';
+            var newLimit = 0;
+            var valX = 'rating';
+            numEpisodes = [];
 
             data.forEach(d => {
                 d.rating = +d.rating;
-                //generate option genre 
+                d.episodes = +d.episodes;
                 var genreSplit = d.genre.split(',');
                 for( i = 0; i < genreSplit.length; i++){
                     if(!genreArray.includes(genreSplit[i])){
-                        genreArray.push(genreSplit[i].trim())
+                        genreArray.push(genreSplit[i])
                     }
                 }
             })
 
             //genre selection
-            const select = d3.select('body').append('select').attr('class','genre');
+            const select = d3.select('body').append('select').attr('class','genre').attr('id','idGenre');
 
             const option = select.selectAll('option').data(genreArray).enter().append('option');
 
             option.text(d => d).attr('value', d => d)
 
+            console.log(genreArray)
+
             //rating selection
-            const ratingSelection = d3.select('body').append('select').attr('class','rating');
+            const ratingSelection = d3.select('body').append('select').attr('class','rating').attr('id','idRating');
 
             const ratingOption = ratingSelection.selectAll('option').data(Array.from(Array(10).keys())).enter().append('option');
 
             ratingOption.text(d => d).attr('value', d => d);
+            
+            //radio selection x value
 
 
             // sorting data
@@ -48,16 +60,21 @@
             //store original data assets
             var originalData = data;
 
-            ratingDefault = 2;
+            ratingDefault = 9;
             genreDefault = 'Action';
             limitData = 20;
 
-            //get data filtered by rating default
-            
+            selectElement('idGenre',genreDefault)
+            selectElement('idRating',ratingDefault)
 
+            function selectElement(id, valueToSelect) {    
+                let element = document.getElementById(id);
+                element.value = valueToSelect;
+            }
+
+            //get data filtered by rating default and genre
             let newData = data.filter(function(d,i){
-                    
-                    return d.rating > ratingDefault && d.genre.includes(genreDefault);                    
+                return d.rating > ratingDefault && d.genre.includes(genreDefault);                    
             });
 
 
@@ -85,14 +102,22 @@
                         .attr('height', innerHeight)
                         .attr('transform', `translate ( ${margin.left} , ${margin.top})`);  
             
+
+            newData.forEach( d => {
+                if(!numEpisodes.includes(d.episodes)){
+                    numEpisodes.push(d.episodes)
+                }
+            })
+
+
             let xScale = d3.scaleLinear()
-                            .domain([0,d3.max(data, d => d.rating)])
                             .range([0, innerWidth]).nice();
                             
             let xAxis = d3.axisBottom(xScale);
             chart.append('g')
                     .call(xAxis)
                     .attr('transform',`translate(0, ${innerHeight})`)
+                    .attr('class', 'xLine');
 
             let yScale = d3.scaleBand()
                             .domain(data.map(d => d.name))
@@ -104,26 +129,36 @@
 
 
             //function draw 
-            const render = (selection, data) => {
+            const render = (selection, data, valX) => {
 
                 //update axis
-                xScale.domain([0,d3.max(data, d => d.rating)]);
+                xScale.domain([0,d3.max(data, d => d[valX])]);
                 yScale.domain(data.map(d => d.name));
 
+                data.forEach( d => {
+                    if(!numEpisodes.includes(d.episodes)){
+                        numEpisodes.push(d.episodes)
+                    }
+                })
+ 
+                console.log('domain',xScale.domain())
+                console.log('num ep',numEpisodes)
+
                 chart.select('.yLine').call(yAxis);
+                chart.select('.xLine').call(xAxis);
 
                 const rectangles = chart.selectAll('rect').data(data);
 
                 rectangles.enter().append('rect')
                             .transition()
                             .duration(500)
-                            .attr('width', d => xScale(d.rating))
+                            .attr('width', d => xScale(d[valX]))
                             .attr('height', yScale.bandwidth())
                             .attr('y', d => yScale(d.name))
 
                 //update rect
                 rectangles.transition()
-                            .duration(500).attr('width', d => xScale(d.rating))
+                            .duration(500).attr('width', d => xScale(d[valX]))
                             .attr('height', yScale.bandwidth())
                             .attr('y', d => yScale(d.name))
 
@@ -131,23 +166,42 @@
 
             }
 
-            render( chart, newData);
+            render( chart, newData, valX);
 
-            var newRating = ratingDefault;
-            var newGenre = genreDefault;
-            var newLimit = limitData;
+            var updatedData = [];
 
-            //option selected
+            //value xAxis episode or rating
+            d3.selectAll('.input').on('change', function(){
+                console.log(this.value)
+                valX = this.value;
+                console.log('val xxx',valX)
+                console.log('uppo',updatedData)
+
+                if(updatedData.length > 0){
+                    render( chart, updatedData, valX)
+                }else{
+                    render( chart, newData, valX)
+                }
+
+            
+            })
+
+
+
+
+            //genre selected
             d3.select('.genre').on('change', function(){
 
                 newGenre = this.value;
-                console.log(newGenre)
+                console.log('genre',newGenre)
 
-                var minRating = newRating;
-                minRating = minRating.toFixed(2)
-                console.log('min',minRating)
+                console.log('rating')
+                console.log('min',newRating)
+                var maxRating = +newRating + 1;
+                maxRating = maxRating.toFixed(2)
+                console.log('max',maxRating)
 
-                let filteredData = data.filter(function(d,i){
+                filteredData = data.filter(function(d,i){
                     
                     return d.rating > newRating  && d.genre.includes(newGenre);
 
@@ -155,36 +209,48 @@
 
                 filteredData = filteredData.slice(0, limitData);
 
-                console.log(filteredData)
+                updatedData = []
 
-                render( chart, filteredData);
+                updatedData.push(...filteredData);
+
+                console.log('uuuuup',updatedData)
+
+                render( chart, filteredData, valX);
             })
 
-            //option selected
+            //rating selected
             d3.select('.rating').on('change', function(){
 
                 var minRating = +this.value;
                 minRating = minRating.toFixed(2)
                 console.log('min',minRating)
 
+                newRating = minRating;
                 var maxRating = +minRating + 1;
                 maxRating = maxRating.toFixed(2)
                 console.log('max',maxRating)
+
 
                 console.log(newGenre)
 
                 let filteredData = data.filter(function(d){
                 
-                    return d.rating > minRating  && d.genre.includes(newGenre);
+                    return d.rating > minRating && d.genre.includes(newGenre);
 
                 });
 
                 filteredData = filteredData.slice(0, limitData);
 
-                console.log(filteredData)
+                updatedData = []
 
-                render( chart, filteredData);
+                updatedData.push(...filteredData);
+
+                console.log('uuuuup',updatedData)
+
+                render( chart, filteredData, valX);
+
             })
+
 
         })
     </script>
