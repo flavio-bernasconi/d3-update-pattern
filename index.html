@@ -8,15 +8,37 @@
 </head>
 <body>
 
-    <svg class='chart'></svg>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.6.0/d3.js"></script>
     <script>
         d3.csv('data.csv').then(data => {
 
+            const genreArray = [];
+
             data.forEach(d => {
                 d.rating = +d.rating;
+                //generate option genre 
+                var genreSplit = d.genre.split(',');
+                for( i = 0; i < genreSplit.length; i++){
+                    if(!genreArray.includes(genreSplit[i])){
+                        genreArray.push(genreSplit[i].trim())
+                    }
+                }
             })
+
+            //genre selection
+            const select = d3.select('body').append('select').attr('class','genre');
+
+            const option = select.selectAll('option').data(genreArray).enter().append('option');
+
+            option.text(d => d).attr('value', d => d)
+
+            //rating selection
+            const ratingSelection = d3.select('body').append('select').attr('class','rating');
+
+            const ratingOption = ratingSelection.selectAll('option').data(Array.from(Array(10).keys())).enter().append('option');
+
+            ratingOption.text(d => d).attr('value', d => d);
+
 
             // sorting data
             data = data.sort(function(a, b) {
@@ -25,14 +47,22 @@
 
             //store original data assets
             var originalData = data;
-            ratingDefault = 8.8;
+
+            ratingDefault = 2;
+            genreDefault = 'Action';
+            limitData = 20;
 
             //get data filtered by rating default
-            data = data.filter(function(value, index, arr){
+            
 
-                return value.rating > ratingDefault;
-
+            let newData = data.filter(function(d,i){
+                    
+                    return d.rating > ratingDefault && d.genre.includes(genreDefault);                    
             });
+
+
+            //output limited data
+            newData = newData.slice(0, limitData);
 
 
             //chart 
@@ -44,7 +74,7 @@
             const innerWidth = chartWidth - margin.left - margin.right;
             const innerHeight = chartHeight - margin.top - margin.bottom;
 
-            const space = d3.select('.chart')
+            const space = d3.select('body').append('svg')
                                     .attr('width', chartWidth)
                                     .attr('height', chartHeight);
 
@@ -57,7 +87,7 @@
             
             let xScale = d3.scaleLinear()
                             .domain([0,d3.max(data, d => d.rating)])
-                            .range([0, innerWidth]);
+                            .range([0, innerWidth]).nice();
                             
             let xAxis = d3.axisBottom(xScale);
             chart.append('g')
@@ -92,7 +122,8 @@
                             .attr('y', d => yScale(d.name))
 
                 //update rect
-                rectangles.attr('width', d => xScale(d.rating))
+                rectangles.transition()
+                            .duration(500).attr('width', d => xScale(d.rating))
                             .attr('height', yScale.bandwidth())
                             .attr('y', d => yScale(d.name))
 
@@ -100,34 +131,60 @@
 
             }
 
-            render( chart, data);
+            render( chart, newData);
 
-            // setInterval(()=> {
-            //     data.pop()
-            //     console.log(data.length)
-            //     render( chart, data);
-            // }, 2000)
+            var newRating = ratingDefault;
+            var newGenre = genreDefault;
+            var newLimit = limitData;
 
-            var current = ratingDefault;
+            //option selected
+            d3.select('.genre').on('change', function(){
 
-            let btn = d3.select('body')
-                            .append('button')
-                            .text('click me')
-                            .on('click', function(){
-                                
-                                current = current - 0.1;
-                                console.log(current)
+                newGenre = this.value;
+                console.log(newGenre)
 
-                                data = originalData.filter(function(d){
-                                    console.log('in function')
-                                        return d.rating > current;
-                                    });
+                var minRating = newRating;
+                minRating = minRating.toFixed(2)
+                console.log('min',minRating)
 
-                                console.log("data",data)
+                let filteredData = data.filter(function(d,i){
+                    
+                    return d.rating > newRating  && d.genre.includes(newGenre);
 
-                                render( chart, data);
-                                                                
-                            });
+                });
+
+                filteredData = filteredData.slice(0, limitData);
+
+                console.log(filteredData)
+
+                render( chart, filteredData);
+            })
+
+            //option selected
+            d3.select('.rating').on('change', function(){
+
+                var minRating = +this.value;
+                minRating = minRating.toFixed(2)
+                console.log('min',minRating)
+
+                var maxRating = +minRating + 1;
+                maxRating = maxRating.toFixed(2)
+                console.log('max',maxRating)
+
+                console.log(newGenre)
+
+                let filteredData = data.filter(function(d){
+                
+                    return d.rating > minRating  && d.genre.includes(newGenre);
+
+                });
+
+                filteredData = filteredData.slice(0, limitData);
+
+                console.log(filteredData)
+
+                render( chart, filteredData);
+            })
 
         })
     </script>
