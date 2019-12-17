@@ -34,6 +34,7 @@
             numEpisodes = [];
             const movie = [];
             const serie = [];
+            var currentType = 'all';
 
 
             data.forEach(d => {
@@ -55,8 +56,6 @@
                     
                 }
             })
-
-            console.log(data)
 
 
             //genre selection
@@ -85,8 +84,6 @@
             //store original data assets
             var originalData = data;
 
-
-
             selectElement('idGenre',genreDefault)
             selectElement('idRating',ratingDefault)
 
@@ -96,7 +93,7 @@
             }
 
             //get data filtered by rating default and genre
-            let newData = data.filter(function(d,i){
+            newData = data.filter(function(d,i){
                 return d.rating > ratingDefault && d.genre.includes(genreDefault);                    
             });
 
@@ -187,28 +184,18 @@
 
             }
 
-            render( chart, newData, valX);
+            var updatedData = [];
 
+            function drawFirtChart(){
 
-            function filtra(arr, genre){
-                filteredData = arr.filter(function(d,i){
-                    
-                    return d.rating > newRating  && d.genre.includes(genre);
+                ifType()
+                render( chart, updatedData, valX);
 
-                });
-
-                filteredData = filteredData.slice(0, limitData);
-
-                updatedData = []
-
-                updatedData.push(...filteredData);
-
-                console.log('data funzione filtra', updatedData)
-
-                return(updatedData)
+                console.log(updatedData)
             }
 
-            var updatedData = [];
+            drawFirtChart()
+            
 
             //value xAxis episode or rating
             d3.selectAll('.input').on('change', function(){
@@ -226,8 +213,6 @@
 
 
 
-            var currentType = '';
-
             d3.selectAll('.tipo').on('change', function(){
                 console.log(this.value)
                 currentType = this.value;
@@ -243,13 +228,9 @@
             d3.select('.genre').on('change', function(){
 
                 newGenre = this.value;
-                console.log('genre',newGenre)
 
-                console.log('rating')
-                console.log('min',newRating)
                 var maxRating = +newRating + 1;
                 maxRating = maxRating.toFixed(2)
-                console.log('max',maxRating)
 
                 ifType()
                 
@@ -260,12 +241,11 @@
 
                 var minRating = +this.value;
                 minRating = minRating.toFixed(2)
-                console.log('min',minRating)
+
 
                 newRating = minRating;
                 var maxRating = +minRating + 1;
                 maxRating = maxRating.toFixed(2)
-                console.log('max',maxRating)
 
 
                 ifType()
@@ -289,12 +269,35 @@
                 if(currentType == 'all'){
                     var allType = [...movie,...serie]
 
+                    // sorting data
+                    allType = allType.sort(function(a, b) {
+                        return parseFloat(b.rating) - parseFloat(a.rating);
+                    });
+
                     filtra(allType,newGenre)
 
                     render( chart, filteredData, valX)
                 }
             }
 
+
+            function filtra(arr, genre){
+                filteredData = arr.filter(function(d,i){
+                    
+                    return d.rating > newRating  && d.genre.includes(genre);
+
+                });
+
+                filteredData = filteredData.slice(0, limitData);
+
+                updatedData = []
+
+                updatedData.push(...filteredData);
+
+                console.log('data funzione filtra', updatedData)
+
+                return(updatedData)
+            }
         })
     </script>
     
