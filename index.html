@@ -24,9 +24,9 @@
         d3.csv('data.csv').then(data => {
 
             const genreArray = [];
-            ratingDefault = 8;
+            ratingDefault = 4.00;
             genreDefault = 'Action';
-            limitData = 160;
+            limitData = 10;
             var newRating = ratingDefault;
             var newGenre = '';
             var newLimit = 0;
@@ -47,13 +47,12 @@
                     }
                 }
                 for( x = 0; x < data.length; x ++){
-                    if(d.episodes <= 3 && !movie.includes(d)){
+                    if(d.type == 'Movie' && !movie.includes(d)){
                         movie.push(d)
                     }
-                    if(d.episodes > 3 && !serie.includes(d)){
+                    if(d.type == 'TV' && !serie.includes(d)){
                         serie.push(d)
                     }    
-                    
                 }
             })
 
@@ -96,10 +95,6 @@
             newData = data.filter(function(d,i){
                 return d.rating > ratingDefault && d.genre.includes(genreDefault);                    
             });
-
-
-            //output limited data
-            newData = newData.slice(0, limitData);
 
 
             //chart 
@@ -186,16 +181,12 @@
 
             var updatedData = [];
 
-            function drawFirtChart(){
-
-                ifType()
-                render( chart, updatedData, valX);
-
-                console.log(updatedData)
-            }
-
-            drawFirtChart()
             
+            //output limited data
+            newData = newData.slice(0, limitData);
+            //draw the first chart
+            filtraNdraw()
+
 
             //value xAxis episode or rating
             d3.selectAll('.input').on('change', function(){
@@ -207,21 +198,17 @@
                 }else{
                     render( chart, newData, valX)
                 }
-
-            
             })
-
 
 
             d3.selectAll('.tipo').on('change', function(){
                 console.log(this.value)
                 currentType = this.value;
 
-                ifType()
+                filtraNdraw()
 
             
             })
-
 
 
             //genre selected
@@ -232,7 +219,7 @@
                 var maxRating = +newRating + 1;
                 maxRating = maxRating.toFixed(2)
 
-                ifType()
+                filtraNdraw()
                 
             })
 
@@ -242,18 +229,32 @@
                 var minRating = +this.value;
                 minRating = minRating.toFixed(2)
 
-
                 newRating = minRating;
+                console.log(newRating);
+                
                 var maxRating = +minRating + 1;
                 maxRating = maxRating.toFixed(2)
+                console.log(maxRating);
 
+                //not working ???
+                filteredData = data.filter(function(d){
+                    
+                    return d.rating > newRating && d.rating < maxRating  && d.genre.includes(genreDefault);
 
-                ifType()
+                });
+
+                
+
+                console.log(filteredData);
+                
+
+                // filtraNdraw()
 
             })
 
 
-            function ifType(){
+
+            function filtraNdraw(){
                 if(currentType == 'movie'){
 
                     filtra(movie,newGenre)
